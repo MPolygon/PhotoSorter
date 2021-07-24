@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <dirent.h>
+#include <sqlite3.h>
 
 
 int png_header[8] = {137, 80, 78, 71, 13, 10, 26, 10};
@@ -9,9 +10,23 @@ int jpeg_header[2] = {255, 216};
 
 char fileTypes[3][8] = {"Unknown", "PNG", "JPEG"};
 
+char dbFile[] = "test.db";
+char testFolder[] = "/home/mstrpolygon";
+// char TestFormat[] = "/mnt/d/Blender/Textures/drive-download-20210427T201332Z-001";
+
 
 void ScanFolder(char folder[]);
 int TestFormat(char path[], char filename[]);
+void UpdateDatabase(char path[], char filename[]);
+
+static int callback(void *NotUsed, int argc, char **argv, char **azColName) {
+    int i;
+    for (i=0; i<argc, i++;) {
+        printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
+    }
+    
+    return  0;
+}
 
 int main() {
     
@@ -46,7 +61,9 @@ int main() {
 
     fclose(fp);*/ 
 
-    ScanFolder("/mnt/d/Blender/Textures/drive-download-20210427T201332Z-001");
+    // ScanFolder(testFolder);
+    
+    UpdateDatabase(NULL, NULL);
 
     return 0;
 }
@@ -70,6 +87,8 @@ void ScanFolder(char folder[]) {
             int formatIndex = TestFormat(folder, dp->d_name);
             printf("File format index: %d\n", formatIndex);
             printf("Type: %s\n", fileTypes[formatIndex]);
+            
+            // UpdateDatabase(folder, dp->d_name);
         }
     }
 
@@ -118,4 +137,42 @@ int TestFormat(char path[], char filename[]) {
 
     fclose(fp);
     return 0;
+}
+
+void UpdateDatabase(char path[], char filename[]) {
+    sqlite3  *db;
+    char *zErrMsg = 0;
+    int rc;
+    char *sql;
+    
+    rc = sqlite3_open(dbFile, &db);
+    
+    if (rc) {
+        printf("Can't open  database\n");
+        return;
+    } else {
+        printf("Opened database successfully\n");
+    }
+    
+    sql = "CREATE TABLE PHOTO(" \
+    "ID INT PRIMARY KEY NOT NULL," \
+    "FILENAME TEXT NOT NULL," \
+    "TYPE TEXT NOT NULL," \
+    "SIZE INT NOT NULL);";
+    
+    rc = sqlite3_exec(db, sql, callback, 0, &zErrMsg);
+    
+    if (rc != SQLITE_OK) {
+        printf("SQL Error: %s\n", zErrMsg);
+        sqlite3_free(zErrMsg);
+    } else {
+        printf("Table created successfully\n");
+    }
+    
+    
+    
+    
+    printf("Closing database\n");
+    sqlite3_close(db);
+    
 }
