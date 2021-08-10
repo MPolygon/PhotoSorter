@@ -7,6 +7,7 @@
 #include "utils.h"
 
 
+// Get the number of rows in specified SQL table
 int TableCount(sqlite3 *db, char *tableName) {
     sqlite3_stmt *res;
     char *sqlTemplate = "SELECT count(*) FROM ";
@@ -32,6 +33,8 @@ int TableCount(sqlite3 *db, char *tableName) {
     return output;
 }
 
+
+// Create a record for a given image file in the specified table
 int CreateRecord(sqlite3 *db, char *tableName, char *filename, char *fileType, long int fileSize) {
     char *sql;
     char *zErrMsg = 0;
@@ -67,6 +70,8 @@ int CreateRecord(sqlite3 *db, char *tableName, char *filename, char *fileType, l
 }
 
 
+
+// Check if a file is in the DB already, and creates a record otherwise
 int UpdateDatabase(sqlite3 *db, char *tableName, char *filename, char *fileType, long int fileSize) {
     if (!TableCount(db, tableName)) {
         printf("Debug..................\n");

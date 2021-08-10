@@ -8,12 +8,14 @@
 #include "folder_utils.h"
 
 
+// Defined headers for specific image formats
 int png_header[8] = {137, 80, 78, 71, 13, 10, 26, 10};
 int jpeg_header[2] = {255, 216};
 
 char fileTypes[3][8] = {"Unknown", "PNG", "JPEG"};
 
 
+// Scans a specified folders, and adds any supported images to the DB
 int ScanFolder(sqlite3 *db, char *folder) {
     // Open folder
 
@@ -32,7 +34,7 @@ int ScanFolder(sqlite3 *db, char *folder) {
             printf("File found: %s\n", dp->d_name);
             int formatIndex = TestFormat(folder, dp->d_name);
             long int fileSize = GetFileSize(folder, dp->d_name);
-            // int formatIndex = 0;
+
             printf("File size: %ld B\n", fileSize);
             printf("Type: %s\n", fileTypes[formatIndex]);
             
@@ -40,21 +42,18 @@ int ScanFolder(sqlite3 *db, char *folder) {
                 printf("--------Updating DB---------\n");
                 UpdateDatabase(db, "PHOTO", dp->d_name, fileTypes[formatIndex], fileSize);
             }
-            
-            // UpdateDatabase(folder, dp->d_name);
+
         }
     }
 
-
-    // Test for file format
-    // Add to DB
-
-    // Close folder
+    closedir(dfd);
+    
 
     return 0;
 }
 
 
+// Look through header to determine the file format (needs optimization)
 int TestFormat(char *path, char *filename) {
     FILE *fp;
     int c, i, max;
@@ -95,6 +94,7 @@ int TestFormat(char *path, char *filename) {
 }
 
 
+// Get file size
 long int GetFileSize(char *path, char *filename) {
     FILE *fp;
     char fullPath[strlen(path) + strlen(filename) + 1];
@@ -120,7 +120,7 @@ long int GetFileSize(char *path, char *filename) {
     return size;
 }
 
-
+// Get full path for a given directory and file name
 void GetFullPath(char *OUTPUT, char *path, char *filename) {
     strcpy(OUTPUT, path);
     strcat(OUTPUT, "/");
