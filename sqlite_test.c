@@ -18,8 +18,12 @@ int TableCount(sqlite3 *db, char *tableName) {
     
     sql = Concat(sqlTemplate, tableName);
     
-    sqlite3_prepare_v2(db, sql, -1, &res, 0);
+    rc = sqlite3_prepare_v2(db, sql, -1, &res, 0);
     
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "SQL error: %s\n", sqlite3_errmsg(db));
+        sqlite3_free(zErrMsg);
+    }
     
     rc = sqlite3_step(res);
     
@@ -58,8 +62,8 @@ int CreateRecord(sqlite3 *db, char *tableName, char *filename, char *fileType, l
     rc = sqlite3_exec(db, sql, 0, 0, &zErrMsg);
     
     if (rc != SQLITE_OK) {
-        fprintf(stderr, "SQL error: %s\n", zErrMsg);
-        sqlite3_free(zErrMsg);
+        fprintf(stderr, "SQL error: %s\n", sqlite3_errmsg(db));
+        return 1;
     }
     
     
@@ -96,25 +100,25 @@ int UpdateDatabase(sqlite3 *db, char *tableName, char *filename, char *fileType,
         return 1;
     }    
     
-    do {
-        rc = sqlite3_step(res);
-        char *row_filename = 0;
-        sprintf(row_filename, "%s", sqlite3_column_text(res, 0));
+    rc = sqlite3_step(res);
+    
+    while (rc == SQLITE_ROW) {
         // Compare Strings
-        if (!strcmp(filename, row_filename)) {
+        if (!strcmp(filename, sqlite3_column_text(res, 0))) {
             printf("File in DB\n");
             sqlite3_finalize(res);
             free(sql);
             return 0;
         }
-        free(row_filename);
+        rc = sqlite3_step(res);
         
-    } while (rc == SQLITE_ROW);
+    }
     
-    CreateRecord(db, tableName, filename, fileType, fileSize);
-    
+    if (!CreateRecord(db, tableName, filename, fileType, fileSize)) {
+        printf("Error: Failed to create record\n");
+    }
+
     sqlite3_finalize(res);
-    
     free(sql);
     
     
